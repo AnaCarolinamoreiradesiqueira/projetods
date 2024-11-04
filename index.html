@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultas</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Lista de Consultas</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Nome do Médico</th>
+                <th>Especialidade</th>
+                <th>Nome do Paciente</th>
+                <th>Data da Consulta</th>
+                <th>Convênio ou Particular</th>
+                <th>Data de Nascimento</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-consultas">
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchConsulta() {
+            try {
+                const response = await fetch('http://localhost:3031/mostrar');
+                const consulta = await response.json();
+                const tabelaConsulta = document.getElementById('tabela-consultas');
+
+                consulta.forEach(consulta => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${consulta.nmmedico}</td>
+                        <td>${consulta.espmedico}</td>
+                        <td>${consulta.nmpaciente}</td>
+                        <td>${consulta.dtconsulta}</td>
+                        <td>${consulta.conveparticular}</td>
+                        <td>${consulta.dtnascimento}</td>
+                    `;
+                    tabelaConsulta.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Erro ao buscar consultas:', error);
+            }
+        }
+
+        fetchConsulta();
+    </script>
+</body>
+</html>
