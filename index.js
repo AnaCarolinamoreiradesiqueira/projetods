@@ -1,14 +1,15 @@
 const express = require("express");
 const Sequelize = require("sequelize");
-const rotas = express();
 const cors = require('cors');
 
-rotas.use(express.json());
-rotas.use(express.static('public'));
-rotas.use(cors());
+
+const rotas = express();
+rotas.use(express.json());  
+rotas.use(express.static('public')); 
+rotas.use(cors()); 
 
 
-const conexaoComBanco = new Sequelize("teste", "root", "planejamento", {
+const conexaoComBanco = new Sequelize("teste", "root", "", {
   host: "localhost",
   dialect: "mysql",
 });
@@ -32,19 +33,20 @@ const Consulta = conexaoComBanco.define("Consulta", {
     type: Sequelize.STRING(64),
     allowNull: true,
   },
-  dtconsulta: {
-    type: Sequelize.DATE,
-    allowNull: true,
-  },
-  conveparticular: {
-    type: Sequelize.STRING(20),
-    allowNull: true,
-  },
   dtnascimento: {
     type: Sequelize.DATE,
     allowNull: true,
   },
+  tipoconsulta: {
+    type: Sequelize.STRING(20),
+    allowNull: true,
+  },
+  dtconsulta: {
+    type: Sequelize.DATE,
+    allowNull: true,
+  },
 });
+
 
 conexaoComBanco
   .authenticate()
@@ -56,31 +58,38 @@ conexaoComBanco
     console.error("Erro ao conectar com o banco de dados:", error);
   });
 
+
 rotas.get("/", (req, res) => {
-  res.send("Rota principal");
+  res.send("Rota principal funcionando");
 });
 
-rotas.get("/salvar/:nmmedico/:espmedico/:nmpaciente/:dtconsulta/:conveparticular/:dtnascimento", async (req, res) => {
-    const { nmmedico, espmedico, nmpaciente, dtconsulta, conveparticular, dtnascimento } = req.params;
-  
-    try {
-      const novaConsulta = await Consulta.create({ 
-        nmmedico, 
-        espmedico, 
-        nmpaciente, 
-        dtconsulta: new Date(dtconsulta), 
-        conveparticular, 
-        dtnascimento: new Date(dtnascimento) 
-      });
-      res.json({
-        resposta: "Consulta criada com sucesso",
-        Consulta: novaConsulta,
-      });
-    } catch (error) {
-      res.status(500).json({ message: `Erro ao criar consulta: ${error.message}` });
-    }
-  });
-  
+
+rotas.post("/salvar", async (req, res) => {
+  const { nmmedico, espmedico, nmpaciente, dtnascimento, tipoconsulta, dtconsulta } = req.body;
+
+  try {
+    
+    const novaConsulta = await Consulta.create({
+      nmmedico, 
+      espmedico, 
+      nmpaciente, 
+      dtnascimento: new Date(dtnascimento), 
+      tipoconsulta,
+      dtconsulta: new Date(dtconsulta)  
+    });
+    
+    res.json({
+      resposta: "Consulta criada com sucesso!",
+      consulta: novaConsulta
+    });
+  } catch (error) {
+    console.error("Erro ao criar consulta:", error);
+    res.status(500).json({
+      message: `Erro ao criar consulta: ${error.message}`
+    });
+  }
+});
+
 
 rotas.get("/mostrar", async (req, res) => {
   try {
@@ -92,11 +101,51 @@ rotas.get("/mostrar", async (req, res) => {
     }));
     res.json(consultasFormatadas);
   } catch (error) {
-    res.status(500).json({ message: `Erro ao buscar consultas: ${error.message}` });
+    res.status(500).json({
+      message: `Erro ao buscar consultas: ${error.message}`
+    });
   }
 });
 
-rotas.listen(3031, () => {
-  console.log("Server is running on port 3031");
+rotas.delete("/deletar/:id", async function (req, res) {
+  const { id } = req.params;
+  const idNumber = parseInt(id, 10);
+
+  try {
+    const deleted = await Consulta.destroy({
+      where: { id: idNumber },
+    });
+
+    if (deleted) {
+      res.json({ mensagem: "Consulta deletada com sucesso" });
+    } else {
+      res.status(404).json({ mensagem: "Consulta não encontrada" });
+    }
+  } catch (error) {
+    res.status(500).json({ mensagem: "Erro ao deletar consulta: " + error.message });
+  }
 });
 
+app.put('/editar/:id', async (req, res) => {
+  const consultaId = req.params.id;
+  const { nmmedico, espmedico, nmpaciente, dtnascimento, tipoconsulta, dtconsulta } = req.body;
+
+  try {
+      const updated = await updateConsulta(consultaId, {
+          nmmedico,
+          espmedico,
+          nmpaciente,
+          dtnascimento,
+          tipoconsulta,
+          dtconsulta
+      });
+
+      if (updated) {
+          res.status(200).send({ message: 'Consulta atualizada com sucesso!' });
+      } else {
+          res.status(404).send({ message: 'Consulta não encontrada' });
+      }
+  } catch (error) {
+      res.status(500).send({ message: 'Erro ao atualizar consulta' });
+  }
+});
